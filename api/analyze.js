@@ -43,7 +43,7 @@ module.exports = async function handler(req, res) {
 
         res.setHeader('Cache-Control', 'no-store');
         res.status(200).json({
-            result: { ...result, closedCandleCount: candles.length },
+            result: { ...result, closedCandleCount: candles.length, marketProvider: bot.marketProvider },
             candles: candles.slice(-60).map(candle => ({
                 time: candle.openTime,
                 open: candle.open,

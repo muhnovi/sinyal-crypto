@@ -55,7 +55,7 @@ async function analyze(url, res) {
     }
 
     sendJson(res, 200, {
-        result: { ...result, closedCandleCount: candles.length },
+        result: { ...result, closedCandleCount: candles.length, marketProvider: bot.marketProvider },
         candles: candles.slice(-60).map(candle => ({
             time: candle.openTime,
             open: candle.open,

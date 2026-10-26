@@ -49,6 +49,7 @@ function render(data) {
     const { result } = data;
     latestResult = result;
     $('pair-title').textContent = result.symbol;
+    $('market-provider').textContent = result.marketProvider || 'MARKET API';
     $('candle-count').textContent = `${result.closedCandleCount || data.candles.length} CANDLES`;
     $('updated').textContent = `UPDATED ${new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}`;
     $('bot-output').className = `bot-output ${result.signal === 'WAIT' ? 'is-wait' : 'is-signal'}`;

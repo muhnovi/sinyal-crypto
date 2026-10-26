@@ -15,25 +15,66 @@ class PivotCalculator {
 
     async requestKlines(interval, limit) {
         const url = `${this.baseUrl}/fapi/v1/klines`;
-        const response = await axios.get(url, {
-            params: { symbol: this.symbol, interval, limit },
-            httpsAgent: this.agent,
-            timeout: 20000
-        });
+        try {
+            const response = await axios.get(url, {
+                params: { symbol: this.symbol, interval, limit },
+                httpsAgent: this.agent,
+                timeout: 20000
+            });
 
-        if (!Array.isArray(response.data)) {
-            throw new Error(`Respons Binance tidak valid: ${JSON.stringify(response.data)}`);
+            if (!Array.isArray(response.data)) {
+                throw new Error(`Respons Binance tidak valid: ${JSON.stringify(response.data)}`);
+            }
+
+            this.marketProvider = 'Binance Futures';
+            return response.data.map(k => ({
+                openTime: Number(k[0]),
+                open: Number(k[1]),
+                high: Number(k[2]),
+                low: Number(k[3]),
+                close: Number(k[4]),
+                volume: Number(k[5]),
+                closeTime: Number(k[6])
+            }));
+        } catch (binanceError) {
+            const bybitInterval = {
+                '5m': '5', '15m': '15', '30m': '30',
+                '1h': '60', '4h': '240', '1d': 'D'
+            }[interval];
+            if (!bybitInterval) throw binanceError;
+
+            const response = await axios.get('https://api.bybit.com/v5/market/kline', {
+                params: {
+                    category: 'linear',
+                    symbol: this.symbol,
+                    interval: bybitInterval,
+                    limit: Math.min(limit, 1000)
+                },
+                httpsAgent: this.agent,
+                timeout: 20000
+            });
+            if (response.data?.retCode !== 0 || !Array.isArray(response.data?.result?.list)) {
+                throw new Error(`Respons Bybit tidak valid: ${JSON.stringify(response.data)}`);
+            }
+
+            const intervalMs = interval === '1d'
+                ? 24 * 60 * 60 * 1000
+                : Number(bybitInterval) * 60 * 1000;
+            this.marketProvider = 'Bybit Linear (fallback)';
+            console.warn(`⚠️ Binance diblokir; memakai ${this.marketProvider} untuk ${this.symbol}`);
+            return response.data.result.list.map(k => {
+                const openTime = Number(k[0]);
+                return {
+                    openTime,
+                    open: Number(k[1]),
+                    high: Number(k[2]),
+                    low: Number(k[3]),
+                    close: Number(k[4]),
+                    volume: Number(k[5]),
+                    closeTime: openTime + intervalMs - 1
+                };
+            }).sort((a, b) => a.openTime - b.openTime);
         }
-
-        return response.data.map(k => ({
-            openTime: Number(k[0]),
-            open: Number(k[1]),
-            high: Number(k[2]),
-            low: Number(k[3]),
-            close: Number(k[4]),
-            volume: Number(k[5]),
-            closeTime: Number(k[6])
-        }));
     }
 
     async fetchCandles() {
@@ -42,7 +83,7 @@ class PivotCalculator {
             const now = Date.now();
             const closed = candles.filter(c => c.closeTime < now);
             if (closed.length < 100) throw new Error(`Data candle tertutup tidak cukup: ${closed.length}`);
-            console.log(`✅ ${closed.length} candle ${this.interval} tertutup berhasil diambil`);
+            console.log(`✅ ${closed.length} candle ${this.interval} tertutup berhasil diambil (${this.marketProvider || 'market API'})`);
             return closed;
         } catch (error) {
             this.lastMarketError = error.response?.data?.msg || error.message;
