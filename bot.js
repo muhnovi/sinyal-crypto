@@ -42,38 +42,49 @@ class PivotCalculator {
                 '1h': '60', '4h': '240', '1d': 'D'
             }[interval];
             if (!bybitInterval) throw binanceError;
-
-            const response = await axios.get('https://api.bybit.com/v5/market/kline', {
-                params: {
-                    category: 'linear',
-                    symbol: this.symbol,
-                    interval: bybitInterval,
-                    limit: Math.min(limit, 1000)
-                },
-                httpsAgent: this.agent,
-                timeout: 20000
-            });
-            if (response.data?.retCode !== 0 || !Array.isArray(response.data?.result?.list)) {
-                throw new Error(`Respons Bybit tidak valid: ${JSON.stringify(response.data)}`);
-            }
-
             const intervalMs = interval === '1d'
                 ? 24 * 60 * 60 * 1000
                 : Number(bybitInterval) * 60 * 1000;
-            this.marketProvider = 'Bybit Linear (fallback)';
-            console.warn(`⚠️ Binance diblokir; memakai ${this.marketProvider} untuk ${this.symbol}`);
-            return response.data.result.list.map(k => {
-                const openTime = Number(k[0]);
-                return {
-                    openTime,
-                    open: Number(k[1]),
-                    high: Number(k[2]),
-                    low: Number(k[3]),
-                    close: Number(k[4]),
-                    volume: Number(k[5]),
-                    closeTime: openTime + intervalMs - 1
-                };
-            }).sort((a, b) => a.openTime - b.openTime);
+
+            let response;
+            try {
+                response = await axios.get('https://api.bybit.com/v5/market/kline', {
+                    params: { category: 'linear', symbol: this.symbol, interval: bybitInterval, limit: Math.min(limit, 1000) },
+                    httpsAgent: this.agent,
+                    timeout: 20000
+                });
+                if (response.data?.retCode !== 0 || !Array.isArray(response.data?.result?.list)) {
+                    throw new Error(`Respons Bybit tidak valid: ${JSON.stringify(response.data)}`);
+                }
+                this.marketProvider = 'Bybit Linear (fallback)';
+                console.warn(`⚠️ Binance diblokir; memakai ${this.marketProvider} untuk ${this.symbol}`);
+                return response.data.result.list.map(k => {
+                    const openTime = Number(k[0]);
+                    return {
+                        openTime, open: Number(k[1]), high: Number(k[2]), low: Number(k[3]),
+                        close: Number(k[4]), volume: Number(k[5]), closeTime: openTime + intervalMs - 1
+                    };
+                }).sort((a, b) => a.openTime - b.openTime);
+            } catch (bybitError) {
+                const okxBar = { '5m': '5m', '15m': '15m', '30m': '30m', '1h': '1H', '4h': '4H', '1d': '1D' }[interval];
+                const okxResponse = await axios.get('https://www.okx.com/api/v5/market/history-candles', {
+                    params: { instId: `${this.symbol.replace('USDT', '-USDT')}-SWAP`, bar: okxBar, limit: Math.min(limit, 100) },
+                    httpsAgent: this.agent,
+                    timeout: 20000
+                });
+                if (okxResponse.data?.code !== '0' || !Array.isArray(okxResponse.data?.data)) {
+                    throw new Error(`Respons OKX tidak valid: ${JSON.stringify(okxResponse.data)}`);
+                }
+                this.marketProvider = 'OKX Swap (fallback)';
+                console.warn(`⚠️ Binance dan Bybit diblokir; memakai ${this.marketProvider} untuk ${this.symbol}`);
+                return okxResponse.data.data.map(k => {
+                    const openTime = Number(k[0]);
+                    return {
+                        openTime, open: Number(k[1]), high: Number(k[2]), low: Number(k[3]),
+                        close: Number(k[4]), volume: Number(k[5]), closeTime: openTime + intervalMs - 1
+                    };
+                }).sort((a, b) => a.openTime - b.openTime);
+            }
         }
     }
 
