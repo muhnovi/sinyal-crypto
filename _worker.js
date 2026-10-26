@@ -143,6 +143,31 @@ async function analyze(request) {
     if (!/^[A-Z0-9]{5,20}$/.test(symbol)) return responseJson({ error: 'Pair tidak valid.' }, 400);
     if (!config) return responseJson({ error: 'Timeframe tidak didukung.' }, 400);
     try {
+        const binanceInterval = { '5m': '5m', '15m': '15m', '30m': '30m', '1h': '1h', '4h': '4h', '1d': '1d' }[interval];
+        try {
+            const binanceResponse = await fetch(`https://fapi.binance.com/fapi/v1/klines?symbol=${symbol}&interval=${binanceInterval}&limit=100`);
+            const binancePayload = await binanceResponse.json();
+            if (binanceResponse.ok && Array.isArray(binancePayload)) {
+                const candles = binancePayload.map(item => ({
+                    openTime: Number(item[0]),
+                    open: Number(item[1]),
+                    high: Number(item[2]),
+                    low: Number(item[3]),
+                    close: Number(item[4]),
+                    volume: Number(item[5]),
+                    closeTime: Number(item[6])
+                })).filter(candle => candle.closeTime < Date.now());
+                if (candles.length >= 50) {
+                    const result = calculateSignal(candles, symbol, interval);
+                    result.marketProvider = 'Binance Futures';
+                    result.closedCandleCount = candles.length;
+                    return responseJson({ result, candles: candles.slice(-60) });
+                }
+            }
+        } catch (binanceError) {
+            console.warn('Binance tidak tersedia, lanjut ke OKX fallback:', binanceError.message);
+        }
+
         const instrument = `${symbol.replace(/USDT$/, '-USDT')}-SWAP`;
         const endpoint = `https://www.okx.com/api/v5/market/history-candles?instId=${instrument}&bar=${config.bar}&limit=100`;
         const response = await fetch(endpoint);
