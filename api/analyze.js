@@ -27,7 +27,10 @@ module.exports = async function handler(req, res) {
         const bot = new PivotCalculator(symbol, interval, limit);
         const candles = await bot.fetchCandles();
         if (!candles) {
-            res.status(502).json({ error: 'Data market gagal diambil dari Binance. Coba lagi sebentar.' });
+            res.status(502).json({
+                error: 'Binance menolak akses dari lokasi server Vercel. Ubah region function ke Singapore atau deploy API ke VPS/Render yang diizinkan Binance.',
+                detail: bot.lastMarketError || 'Market data tidak tersedia.'
+            });
             return;
         }
 

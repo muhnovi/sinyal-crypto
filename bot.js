@@ -45,6 +45,7 @@ class PivotCalculator {
             console.log(`✅ ${closed.length} candle ${this.interval} tertutup berhasil diambil`);
             return closed;
         } catch (error) {
+            this.lastMarketError = error.response?.data?.msg || error.message;
             console.error('❌ Gagal mengambil candle:', error.response?.data || error.message);
             return null;
         }
