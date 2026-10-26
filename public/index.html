@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0b0f0c">
+  <title>Signal Studio — Bot Output</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <div class="page-glow"></div>
+  <main class="shell">
+    <header class="topbar">
+      <a class="brand" href="/"><span class="brand-mark">↗</span><span>signal<span class="accent">.</span>studio</span></a>
+      <div class="live-pill"><i></i> LIVE MARKET DATA</div>
+      <div class="top-meta">BOT.JS <span>•</span> CLOSED CANDLES</div>
+    </header>
+
+    <section class="hero">
+      <div><p class="eyebrow">PIVOT + FIBONACCI / SIGNAL BOT</p><h1>Read the<br><em>market clean.</em></h1><p class="hero-copy">Masukkan pair Binance Futures untuk melihat output strategi bot secara lengkap.</p></div>
+      <div class="hero-stamp"><span>RULES</span><strong>BOT.JS</strong><small>NO GUESSING<br>JUST DATA</small></div>
+    </section>
+
+    <section class="search-panel">
+      <div class="field"><label for="pair">TRADING PAIR</label><div class="input-wrap"><span class="input-icon">⌕</span><input id="pair" value="BTCUSDT" autocomplete="off" spellcheck="false"><span class="quote">USDT</span></div></div>
+      <div class="field timeframe-field"><label for="interval">TIMEFRAME</label><select id="interval"><option value="5m">5 MIN</option><option value="15m" selected>15 MIN</option><option value="30m">30 MIN</option><option value="1h">1 HOUR</option><option value="4h">4 HOUR</option><option value="1d">1 DAY</option></select></div>
+      <button id="analyze" class="primary-btn"><span>RUN BOT</span><b>↗</b></button>
+    </section>
+    <p id="status" class="status" aria-live="polite"></p>
+
+    <section id="dashboard" class="dashboard hidden">
+      <div class="output-head"><div><p class="eyebrow">BOT OUTPUT</p><h2 id="pair-title">BTCUSDT</h2></div><div><span id="candle-count" class="count-pill">— CANDLES</span><span id="updated" class="updated">—</span></div></div>
+      <article class="terminal-card">
+        <div class="terminal-top"><span><i></i> strategy output</span><button id="copy-all" class="copy-btn">COPY OUTPUT</button></div>
+        <div id="bot-output" class="bot-output"></div>
+      </article>
+      <div class="output-actions">
+        <span class="disclaimer">Sinyal kandidat setup, bukan jaminan profit. Backtest dan paper-trading sebelum live.</span>
+      </div>
+    </section>
+    <footer><span>BUILT FOR DISCIPLINED TRADERS</span><span>DATA BY BINANCE FUTURES API</span></footer>
+  </main>
+  <script src="/app.js"></script>
+</body>
+</html>
